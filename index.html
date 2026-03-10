@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Samuel Fork Truck - Factory Viewer</title>
+  <style>
+    body { margin:0; overflow:hidden; background:#111; font-family:Arial; color:white; }
+    #viewer { position:absolute; top:0; left:0; width:100%; height:100%; }
+    #sidebar {
+      position:absolute; top:20px; left:20px; width:280px; background:rgba(0,0,0,0.9);
+      padding:20px; border-radius:12px; border:2px solid #0066ff; z-index:1000;
+    }
+    h1 { margin:0 0 20px 0; text-align:center; color:#00ccff; font-size:22px; }
+    button {
+      width:100%; padding:14px; margin:8px 0; background:#0066ff; color:white;
+      border:none; border-radius:8px; font-size:16px; cursor:pointer;
+    }
+    button:hover { background:#3388ff; }
+    #zoho-btn { background:#00aa44; margin-top:20px; }
+    #zoho-btn:hover { background:#00cc55; }
+    #status { position:absolute; top:20px; right:20px; background:rgba(0,0,0,0.8); padding:10px 15px; border-radius:8px; z-index:200; }
+  </style>
+</head>
+<body>
+
+<div id="viewer"></div>
+
+<div id="sidebar">
+  <h1>Samuel Fork Truck</h1>
+  <button onclick="goToPart(0)">Front Wheel</button>
+  <button onclick="goToPart(1)">Rear Wheel</button>
+  <button onclick="goToPart(2)">Front Forks</button>
+  <button onclick="goToPart(3)">Fuel Tank</button>
+  
+  <button id="zoho-btn" onclick="openZohoFolder()">
+    Open Asset Folder in AMP5D
+  </button>
+</div>
+
+<div id="status">Loading model...</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.178.0/three.module.js",
+    "@sparkjsdev/spark": "https://sparkjs.dev/releases/spark/0.1.10/spark.module.js"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from "three";
+import { SplatMesh } from "@sparkjsdev/spark";
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.getElementById("viewer").appendChild(renderer.domElement);
+
+const cameraViews = [
+  { pos: [3.76, 1.56, 1.22], target: [0.79, -1.71, -7.71] }, // Front Wheel
+  { pos: [5.04, 1.05, 0.45], target: [0.82, -3.94, -7.06] }, // Rear Wheel
+  { pos: [0.04, 2.17, -2.25], target: [4.15, -2.16, -0.75] }, // Front Forks
+  { pos: [5.39, 2.42, -1.93], target: [-2.35, -3.20, 0.85] }  // Fuel Tank
+];
+
+let splatMesh = null;
+let modelLoaded = false;
+
+function goToPart(i) {
+  if (!modelLoaded) return;
+  const v = cameraViews[i];
+  camera.position.set(v.pos[0], v.pos[1], v.pos[2]);
+  camera.lookAt(v.target[0], v.target[1], v.target[2]);
+}
+
+function openZohoFolder() {
+  window.open('https://kronoqr.amp5d.com/folder/l62daeb5091f2cc734ea69dc546a42e634f0a', '_blank');
+}
+
+// Your GitHub raw link (works perfectly on Vercel)
+const modelUrl = "https://raw.githubusercontent.com/Kronoteq/models/main/Samuel_Fork_Truck_1.ply";
+
+document.getElementById('status').innerText = 'Loading model...';
+
+splatMesh = new SplatMesh({ url: modelUrl });
+scene.add(splatMesh);
+
+splatMesh.onLoad = () => {
+  modelLoaded = true;
+  document.getElementById('status').innerText = '✅ Loaded! Click any button on the left.';
+  goToPart(0);
+};
+
+splatMesh.onError = (err) => {
+  document.getElementById('status').innerText = 'Error loading model — check console (F12)';
+  console.error(err);
+};
+
+// Animation loop
+function animate() {
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+}
+animate();
+
+// Resize
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+
+</body>
+</html>
